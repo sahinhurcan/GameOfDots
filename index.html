@@ -1,0 +1,63 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+    <title>Dots</title>
+    <link rel="manifest" href="manifest.json">
+    <!--CSS-->
+    <link href="css/ionic.app.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.2/css/all.css" integrity="sha384-/rXc/GQVaYpyDdyxK+ecHPVYJSN9bmVFBvjA/9eOB+pb3F2w2N6fc5qB9Ew5yIns" crossorigin="anonymous">
+
+    <!--JS-->
+    <script src="lib/ionic/js/ionic.bundle.js"></script>
+    <script src="lib/firebase/firebase.js"></script>
+    <script src="cordova.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/_service.js"></script>
+    <script src="js/_controller.js"></script>
+    <script src="js/_directive.js"></script>
+    <link href="https://unpkg.com/ionicons@4.4.6/dist/css/ionicons.min.css" rel="stylesheet">
+</head>
+<body ng-app="starter" ng-controller="game">
+<ion-pane ng-class="opt.gameColor">
+    <div class="game-btn" ng-show="gameStart">
+        <div class="icon ion-ios-help-circle help-btn" ng-click="pause()"></div>
+        <div class="icon ion-ios-color-palette color-btn" ng-click="color()"></div>
+        <div class="icon ion-ios-people scors-btn" ng-click="scoreModal.open()"></div>
+    </div>
+    <div class="game-pane">
+        <div class="level" ng-bind="'Level '+user.level" ng-class="opt.levelScale"></div>
+        <div class="mode" ng-show="opt.points > 25">HARD DOTS</div>
+        <div class="score" ng-bind="user.score + (opt.gameColor =='anim02'?'  X2':'')" ng-class="user.score > user.higScore ? 'new':''"></div>
+        <div class="dot" style="transform: rotate({{opt.rotate}}deg)">
+            <div class="black"></div>
+            <div class="gray"></div>
+        </div>
+        <div class="dots">
+            <div ng-class="dotes.classA" style="transition-duration:{{dotes.speedA}}ms"></div>
+            <div ng-class="dotes.classB" style="transition-duration:{{dotes.speedB}}ms"></div>
+        </div>
+        <div class="controller">
+            <div class="right" ng-click="right()"><i class="icon ion-redo" ng-hide="user.higScore || user.score"></i></div>
+            <div class="left" ng-click="left()"><i class="icon ion-undo" ng-hide="user.higScore || user.score"></i></div>
+        </div>
+    </div>
+    <div class="game-sound">
+        <audio id="end">
+            <source src="sound/end.ogg" type="audio/ogg">
+        </audio>
+        <audio id="tap">
+            <source src="sound/tap.ogg" type="audio/ogg">
+        </audio>
+        <audio id="dots">
+            <source src="sound/points.ogg" type="audio/ogg">
+        </audio>
+        <audio id="touch">
+            <source src="sound/move.ogg" type="audio/ogg">
+        </audio>
+    </div>
+</ion-pane>
+</body>
+</html>
