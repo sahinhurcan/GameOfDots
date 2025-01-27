@@ -1,60 +1,4 @@
 angular.module('game.services', [])
-    .factory('firebase', function ($q) {
-        var database = firebase.database();
-        var factory = {};
-
-        factory.checkNetwrork = function () {
-            var q = $q.defer();
-            database.ref(".info/connected").on("value", function (snapshot) {
-                q.resolve(snapshot.val())
-            });
-            return q.promise
-        };
-
-        factory.checkName = function (data) {
-            var q = $q.defer();
-            database.ref('users/us-' + data.name).child('device').once('value').then(function (snapshot) {
-                var resp = snapshot.val();
-                if (resp === null) {
-                    q.resolve(true)
-                } else {
-                    if (resp === data.device) {
-                        q.resolve(true)
-                    } else {
-                        q.resolve(false)
-                    }
-                }
-            });
-            return q.promise
-        };
-
-        factory.checkScore = function (data) {
-            var q = $q.defer();
-            database.ref('users/us-' + data.name).child('score').once('value').then(function (snapshot) {
-                var resp = snapshot.val();
-                if (resp < data.score) {
-                    q.resolve(true)
-                } else {
-                    q.resolve(resp)
-                }
-            });
-            return q.promise
-        };
-
-        factory.setScore = function (data) {
-            database.ref('users/us-' + data.name).set(data);
-        };
-
-        factory.getScore = function () {
-            var data = [];
-            database.ref("users").orderByChild("score").on("child_added", function (snapshot) {
-                data.push(snapshot.val());
-            });
-            return data;
-        };
-
-        return factory;
-    })
     .factory('AdMob', function ($window) {
         var _admob;
         var _admobid;
@@ -196,4 +140,3 @@ angular.module('game.services', [])
         }
     })
 ;
-

@@ -1,5 +1,5 @@
 angular.module('game.controllers', [])
-    .controller('game', function ($scope, $rootScope, $ionicPlatform, $timeout, $ionicModal, $ionicPopup, AdMob, firebase) {
+    .controller('game', function ($scope, $rootScope, $ionicPlatform, $timeout, $ionicModal, $ionicPopup, AdMob) {
         var dot = $scope,
             fn = {};
 
@@ -181,7 +181,10 @@ angular.module('game.controllers', [])
 
         fn.getScore = function () {
             if ($rootScope.network) {
-                dot.users = firebase.getScore();
+                dot.users = [];
+                firebase.database().ref("users").orderByChild("score").on("child_added", function (snapshot) {
+                    dot.users.push(snapshot.val());
+                });
             } else {
                 dot.sound.tap.play();
                 dot.opt.pause = true;
@@ -205,12 +208,11 @@ angular.module('game.controllers', [])
                     date: fn.date(true),
                     device: (navigator.language + '/' + navigator.userAgent).replace(/ /g, '/')
                 };
-                firebase.checkScore(params).then(function (resp) {
-                    if (resp === true) {
-                        // Game > Server
-                        firebase.setScore(params)
+                firebase.database().ref('users/us-' + params.name).child('score').once('value').then(function (snapshot) {
+                    var resp = snapshot.val();
+                    if (resp < params.score) {
+                        firebase.database().ref('users/us-' + params.name).set(params);
                     } else {
-                        // Game < Server
                         dot.user.higScore = resp;
                         window.localStorage.setItem('higScore', dot.user.higScore);
                     }
@@ -266,8 +268,9 @@ angular.module('game.controllers', [])
                             name: res,
                             device: (navigator.language + '/' + navigator.userAgent).replace(/ /g, '/')
                         };
-                        firebase.checkName(params).then(function (resp) {
-                            if (resp) {
+                        firebase.database().ref('users/us-' + params.name).child('device').once('value').then(function (snapshot) {
+                            var resp = snapshot.val();
+                            if (resp === null || resp === params.device) {
                                 window.localStorage.setItem('username', res);
                                 fn.setScore(res);
                             } else {
@@ -275,7 +278,7 @@ angular.module('game.controllers', [])
                                 alert("Bu kullanıcı adı daha önce kullanılmış, farklı kullanıcı adı dene.");
                                 fn.setUsername();
                             }
-                        })
+                        });
                     } else {
                         fn.endGame();
                     }
