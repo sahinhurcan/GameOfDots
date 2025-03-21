@@ -1,5 +1,5 @@
 angular.module('game.controllers', [])
-    .controller('game', function ($scope, $rootScope, $ionicPlatform, $timeout, $ionicModal, $ionicPopup, AdMob, firebase) {
+    .controller('game', function ($scope, $rootScope, $ionicPlatform, $timeout, $ionicModal, $ionicPopup) {
         var dot = $scope,
             fn = {};
 
@@ -42,19 +42,16 @@ angular.module('game.controllers', [])
                     $ionicModal.fromTemplateUrl('templates/modals/scoreList.html', {
                         scope: dot
                     }).then(function (modal) {
-                        fn.getScore();
                         dot.addScoreModal = modal;
                         dot.addScoreModal.show();
                         dot.opt.pause = true;
                         dot.sound.tap.play();
                     });
                 } else {
-                    fn.getScore();
                     dot.addScoreModal.show();
                     dot.opt.pause = true;
                     dot.sound.tap.play();
                 }
-                fn.showBanner();
             },
             close: function () {
                 dot.addScoreModal.hide();
@@ -144,24 +141,6 @@ angular.module('game.controllers', [])
 
         // JS FUNC
 
-        fn.showBanner = function () {
-            var done = AdMob.showBanner();
-            if (!done) {
-                console.log("AdMob banner is not ready!")
-            }
-        };
-
-        fn.removeBanner = function () {
-            AdMob.removeAds();
-        };
-
-        fn.showInterstitial = function () {
-            var done = AdMob.showInterstitial();
-            if (!done) {
-                console.log("AdMob interstitial is not ready!")
-            }
-        };
-
         fn.date = function (hour) {
             var d = new Date();
             var dec = function (data) {
@@ -177,112 +156,6 @@ angular.module('game.controllers', [])
 
         fn.random = function (i) {
             return Math.round(Math.random() * i);
-        };
-
-        fn.getScore = function () {
-            if ($rootScope.network) {
-                dot.users = firebase.getScore();
-            } else {
-                dot.sound.tap.play();
-                dot.opt.pause = true;
-                $ionicPopup.alert({
-                    title: 'Hata Oluştu!',
-                    template: 'Skor tablosuna bağlanamıyorsunuz. Daha sonra tekrar deneyin.',
-                    okText: 'Tamam'
-                }).then(function (res) {
-                    dot.scoreModal.close();
-                })
-            }
-        };
-
-        fn.setScore = function (username, higScoreOffline) {
-            if ($rootScope.network) {
-                // HigScore ==> Server
-                fn.showInterstitial();
-                var params = {
-                    name: username || dot.user.username,
-                    score: parseInt(higScoreOffline || dot.user.score),
-                    date: fn.date(true),
-                    device: (navigator.language + '/' + navigator.userAgent).replace(/ /g, '/')
-                };
-                firebase.checkScore(params).then(function (resp) {
-                    if (resp === true) {
-                        // Game > Server
-                        firebase.setScore(params)
-                    } else {
-                        // Game < Server
-                        dot.user.higScore = resp;
-                        window.localStorage.setItem('higScore', dot.user.higScore);
-                    }
-
-                    if (higScoreOffline) {
-                        // HigScore Update Remove
-                        window.localStorage.removeItem('higScoreOffline');
-                    } else {
-                        fn.endGame();
-                    }
-                });
-            } else {
-                if (!higScoreOffline) {
-                    // HigScore ==> Storage
-                    dot.sound.tap.play();
-                    dot.opt.pause = true;
-                    window.localStorage.setItem('higScoreOffline', dot.user.score);
-                    $ionicPopup.alert({
-                        title: 'Hata Oluştu!',
-                        template: 'İnternet bağlantısı yok!. Skorunuz şuan sunucuya kaydedilmeyecek.',
-                        okText: 'Tamam'
-                    }).then(function (res) {
-                        fn.endGame();
-                    })
-                }
-            }
-        };
-
-        fn.setUsername = function () {
-            if ($rootScope.network) {
-                $ionicPopup.show({
-                    template: '<input user-name ng-model="user.username" type="text"/>',
-                    title: 'Yeni Rekor',
-                    subTitle: 'Kullanıcı adı gir ve skoru kaydet, diğer oyuncular arasına katıl!',
-                    scope: dot,
-                    buttons: [
-                        {text: 'İptal'},
-                        {
-                            text: 'Kaydet',
-                            type: 'button-positive',
-                            onTap: function (e) {
-                                if (!dot.user.username) {
-                                    e.preventDefault();
-                                } else {
-                                    return dot.user.username;
-                                }
-                            }
-                        }
-                    ]
-                }).then(function (res) {
-                    if (res) {
-                        var params = {
-                            name: res,
-                            device: (navigator.language + '/' + navigator.userAgent).replace(/ /g, '/')
-                        };
-                        firebase.checkName(params).then(function (resp) {
-                            if (resp) {
-                                window.localStorage.setItem('username', res);
-                                fn.setScore(res);
-                            } else {
-                                dot.user.username = null;
-                                alert("Bu kullanıcı adı daha önce kullanılmış, farklı kullanıcı adı dene.");
-                                fn.setUsername();
-                            }
-                        })
-                    } else {
-                        fn.endGame();
-                    }
-                });
-            } else {
-                fn.endGame();
-            }
         };
 
         fn.endGame = function () {
@@ -348,11 +221,7 @@ angular.module('game.controllers', [])
                         navigator.vibrate([200, 200, 200]);
                         dot.sound.end.play();
                         if (dot.user.score > dot.user.higScore) {
-                            if (dot.user.username === null) {
-                                fn.setUsername();
-                            } else {
-                                fn.setScore()
-                            }
+                            fn.endGame();
                         } else {
                             fn.endGame();
                         }
@@ -395,11 +264,7 @@ angular.module('game.controllers', [])
                                 navigator.vibrate([200, 200, 200]);
                                 dot.sound.end.play();
                                 if (dot.user.higScore < dot.user.score) {
-                                    if (dot.user.username == null) {
-                                        fn.setUsername();
-                                    } else {
-                                        fn.setScore()
-                                    }
+                                    fn.endGame();
                                 } else {
                                     fn.endGame();
                                 }
@@ -423,13 +288,10 @@ angular.module('game.controllers', [])
                 dot.user.level = 1;
                 dot.user.higScore = window.localStorage.getItem('higScore');
                 dot.user.higScoreOffline = window.localStorage.getItem('higScoreOffline');
-                if (dot.user.higScoreOffline) fn.setScore(null, dot.user.higScoreOffline);
             }
             dot.dotes.classA = '';
             dot.dotes.classB = '';
 
-            // ADMOB REMOVE
-            fn.removeBanner();
             $timeout(function () {
                 dot.opt.pause = false;
                 fn.action(dot.opt.speed);
