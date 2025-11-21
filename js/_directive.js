@@ -8,7 +8,11 @@ angular.module('game.directives', ['game.utils'])
                         var sanitized = SecurityUtils.sanitizeUsername(value);
                         ngModel.$setViewValue(sanitized);
                         ngModel.$render();
-                        return sanitized;
+                        // Explicitly handle empty string case
+                        return sanitized === '' ? '' : sanitized;
+                    } else {
+                        // Explicitly return empty string for falsy input
+                        return '';
                     }
                 }
 

@@ -34,6 +34,7 @@ angular.module('game.controllers', ['game.utils'])
             username: window.localStorage.getItem('username') || null
         };
         dot.users = [];
+        dot.scoreSubscription = null;
 
         //  MODAL
         dot.scoreModal = {
@@ -61,6 +62,10 @@ angular.module('game.controllers', ['game.utils'])
             }
         };
         dot.$on('$destroy', function () {
+            // Cleanup score subscription
+            if (dot.scoreSubscription && dot.scoreSubscription.unsubscribe) {
+                dot.scoreSubscription.unsubscribe();
+            }
             dot.addScoreModal && dot.addScoreModal.remove();
         });
         dot.$on('modal.hidden', function () {
@@ -181,7 +186,13 @@ angular.module('game.controllers', ['game.utils'])
 
         fn.getScore = function () {
             if ($rootScope.network) {
-                dot.users = firebase.getScore();
+                // Unsubscribe from previous listener if it exists
+                if (dot.scoreSubscription && dot.scoreSubscription.unsubscribe) {
+                    dot.scoreSubscription.unsubscribe();
+                }
+                // Get new score subscription
+                dot.scoreSubscription = firebase.getScore();
+                dot.users = dot.scoreSubscription.data;
             } else {
                 dot.sound.tap.play();
                 dot.opt.pause = true;

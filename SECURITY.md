@@ -3,9 +3,10 @@
 ## Security Improvements Implemented
 
 ### 1. Content Security Policy (CSP)
-- Added comprehensive CSP meta tag to prevent XSS attacks
+- Added CSP meta tag to help mitigate XSS attacks
 - Restricts content sources to trusted domains only
 - Enforces secure connection to Firebase and CDN resources
+- **Note:** The CSP includes `'unsafe-inline'` and `'unsafe-eval'` in `script-src` to maintain compatibility with AngularJS 1.x and Ionic v1 frameworks. This significantly reduces the effectiveness of the CSP against XSS attacks, as inline scripts and `eval()` are allowed. While these directives are necessary for proper application functionality, they mean the CSP does **not** fully prevent XSS attacks. Additional input validation and sanitization measures are implemented to help mitigate this risk.
 
 ### 2. Security Headers
 - `X-Content-Type-Options: nosniff` - Prevents MIME type sniffing

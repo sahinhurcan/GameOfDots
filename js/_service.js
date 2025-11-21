@@ -19,6 +19,12 @@ angular.module('game.services', ['game.utils'])
                 return q.promise;
             }
             
+            // Validate device
+            if (!data.device || typeof data.device !== 'string') {
+                q.reject('Invalid device');
+                return q.promise;
+            }
+            
             // Use shared utility for consistent sanitization
             var sanitizedName = SecurityUtils.sanitizeUsername(data.name);
             
@@ -63,7 +69,7 @@ angular.module('game.services', ['game.utils'])
             
             database.ref('users/us-' + sanitizedName).child('score').once('value').then(function (snapshot) {
                 var resp = snapshot.val();
-                if (resp < data.score) {
+                if (resp === null || resp < data.score) {
                     q.resolve(true)
                 } else {
                     q.resolve(resp)
@@ -79,6 +85,12 @@ angular.module('game.services', ['game.utils'])
             // Security: Validate input before writing to database
             if (!data || !data.name || typeof data.name !== 'string' || typeof data.score !== 'number') {
                 console.error('Invalid data for setScore');
+                return;
+            }
+            
+            // Validate date and device fields
+            if (typeof data.date !== 'string' || typeof data.device !== 'string') {
+                console.error('Invalid date or device for setScore');
                 return;
             }
             
@@ -105,19 +117,28 @@ angular.module('game.services', ['game.utils'])
 
         factory.getScore = function () {
             var data = [];
-            // Use on() with limitToLast for real-time leaderboard updates
-            // limitToLast(100) ensures initial load is limited to top 100 scores
-            // New scores added after will also trigger child_added (this is expected for real-time leaderboard)
-            database.ref("users").orderByChild("score").limitToLast(100).on("child_added", function (snapshot) {
+            var ref = database.ref("users").orderByChild("score").limitToLast(100);
+            
+            // Store the callback so we can remove the listener later
+            var childAddedCallback = function (snapshot) {
                 // Security: Validate data from database before adding to array
                 var userData = snapshot.val();
                 if (userData && typeof userData.score === 'number' && typeof userData.name === 'string') {
                     data.push(userData);
                 }
-            }, function(error) {
+            };
+            
+            ref.on("child_added", childAddedCallback, function(error) {
                 console.error('Error getting scores:', error);
             });
-            return data;
+            
+            // Return both the data array and an unsubscribe function
+            return {
+                data: data,
+                unsubscribe: function() {
+                    ref.off("child_added", childAddedCallback);
+                }
+            };
         };
 
         return factory;
