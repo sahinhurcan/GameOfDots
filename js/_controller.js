@@ -252,10 +252,17 @@ angular.module('game.controllers', [])
                             text: 'Kaydet',
                             type: 'button-positive',
                             onTap: function (e) {
-                                if (!dot.user.username) {
+                                // Security: Validate username before proceeding
+                                if (!dot.user.username || dot.user.username.trim().length === 0) {
                                     e.preventDefault();
                                 } else {
-                                    return dot.user.username;
+                                    // Additional validation: check username length and format
+                                    var sanitized = dot.user.username.replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '').substring(0, 20).toLowerCase();
+                                    if (sanitized.length === 0) {
+                                        e.preventDefault();
+                                    } else {
+                                        return sanitized;
+                                    }
                                 }
                             }
                         }

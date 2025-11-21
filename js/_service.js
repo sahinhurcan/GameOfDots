@@ -13,7 +13,21 @@ angular.module('game.services', [])
 
         factory.checkName = function (data) {
             var q = $q.defer();
-            database.ref('users/us-' + data.name).child('device').once('value').then(function (snapshot) {
+            // Security: Validate and sanitize username before database query
+            if (!data || !data.name || typeof data.name !== 'string') {
+                q.reject('Invalid username');
+                return q.promise;
+            }
+            
+            // Sanitize username to prevent injection attacks
+            var sanitizedName = data.name.replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '').substring(0, 20).toLowerCase();
+            
+            if (sanitizedName.length === 0) {
+                q.reject('Invalid username');
+                return q.promise;
+            }
+            
+            database.ref('users/us-' + sanitizedName).child('device').once('value').then(function (snapshot) {
                 var resp = snapshot.val();
                 if (resp === null) {
                     q.resolve(true)
@@ -24,31 +38,79 @@ angular.module('game.services', [])
                         q.resolve(false)
                     }
                 }
+            }).catch(function(error) {
+                console.error('Error checking username:', error);
+                q.reject(error);
             });
             return q.promise
         };
 
         factory.checkScore = function (data) {
             var q = $q.defer();
-            database.ref('users/us-' + data.name).child('score').once('value').then(function (snapshot) {
+            // Security: Validate input parameters
+            if (!data || !data.name || typeof data.name !== 'string' || typeof data.score !== 'number') {
+                q.reject('Invalid data');
+                return q.promise;
+            }
+            
+            // Sanitize username
+            var sanitizedName = data.name.replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '').substring(0, 20).toLowerCase();
+            
+            if (sanitizedName.length === 0) {
+                q.reject('Invalid username');
+                return q.promise;
+            }
+            
+            database.ref('users/us-' + sanitizedName).child('score').once('value').then(function (snapshot) {
                 var resp = snapshot.val();
                 if (resp < data.score) {
                     q.resolve(true)
                 } else {
                     q.resolve(resp)
                 }
+            }).catch(function(error) {
+                console.error('Error checking score:', error);
+                q.reject(error);
             });
             return q.promise
         };
 
         factory.setScore = function (data) {
-            database.ref('users/us-' + data.name).set(data);
+            // Security: Validate input before writing to database
+            if (!data || !data.name || typeof data.name !== 'string' || typeof data.score !== 'number') {
+                console.error('Invalid data for setScore');
+                return;
+            }
+            
+            // Sanitize username
+            var sanitizedName = data.name.replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '').substring(0, 20).toLowerCase();
+            
+            if (sanitizedName.length === 0) {
+                console.error('Invalid username for setScore');
+                return;
+            }
+            
+            // Create sanitized data object
+            var sanitizedData = {
+                name: sanitizedName,
+                score: parseInt(data.score),
+                date: data.date,
+                device: data.device
+            };
+            
+            database.ref('users/us-' + sanitizedName).set(sanitizedData).catch(function(error) {
+                console.error('Error setting score:', error);
+            });
         };
 
         factory.getScore = function () {
             var data = [];
-            database.ref("users").orderByChild("score").on("child_added", function (snapshot) {
-                data.push(snapshot.val());
+            database.ref("users").orderByChild("score").limitToLast(100).on("child_added", function (snapshot) {
+                // Security: Validate data from database before adding to array
+                var userData = snapshot.val();
+                if (userData && typeof userData.score === 'number' && typeof userData.name === 'string') {
+                    data.push(userData);
+                }
             });
             return data;
         };
