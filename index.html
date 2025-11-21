@@ -4,6 +4,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://use.fontawesome.com https://unpkg.com https://*.firebaseio.com https://*.googleapis.com https://*.google.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://use.fontawesome.com https://unpkg.com; font-src 'self' https://use.fontawesome.com data:; img-src 'self' data: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com; media-src 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="no-referrer">
     <title>Dots</title>
     <link rel="manifest" href="manifest.json">
     <!--CSS-->
@@ -15,6 +19,7 @@
     <script src="lib/firebase/firebase.js"></script>
     <script src="cordova.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/_utils.js"></script>
     <script src="js/_service.js"></script>
     <script src="js/_controller.js"></script>
     <script src="js/_directive.js"></script>

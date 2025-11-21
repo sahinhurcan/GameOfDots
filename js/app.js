@@ -1,4 +1,4 @@
-angular.module('starter', ['ionic', 'game.services', 'game.controllers', 'game.directives'])
+angular.module('starter', ['ionic', 'game.services', 'game.controllers', 'game.directives', 'game.utils'])
     .run(function ($ionicPlatform, $rootScope, AdMob) {
         $rootScope.network = false;
         $ionicPlatform.ready(function () {
@@ -14,6 +14,9 @@ angular.module('starter', ['ionic', 'game.services', 'game.controllers', 'game.d
         });
 
         //  FIREBASE CONFIG & NETWORK CONTROLLER
+        //  NOTE: Firebase API keys are safe to be public in client-side code.
+        //  Security is enforced through Firebase Security Rules on the backend.
+        //  Ensure Firebase Security Rules are properly configured to restrict unauthorized access.
         var config = {
             apiKey: "AIzaSyBYs4jHczjQ2H78Seih_AqX_5F1fioVEWA",
             authDomain: "dots-game-7621e.firebaseapp.com",

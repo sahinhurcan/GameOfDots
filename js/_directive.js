@@ -1,14 +1,18 @@
-angular.module('game.directives', [])
-    .directive('userName', function () {
+angular.module('game.directives', ['game.utils'])
+    .directive('userName', function (SecurityUtils) {
         return {
             require: 'ngModel',
             link: function (scope, element, attrs, ngModel) {
                 function parser(value) {
                     if (value) {
-                        var x = value.replace(/ /g, '_').replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '').substring(0, 20).toLowerCase();
-                        ngModel.$setViewValue(x);
+                        var sanitized = SecurityUtils.sanitizeUsername(value);
+                        ngModel.$setViewValue(sanitized);
                         ngModel.$render();
-                        return x;
+                        // Explicitly handle empty string case
+                        return sanitized;
+                    } else {
+                        // Explicitly return empty string for falsy input
+                        return '';
                     }
                 }
 

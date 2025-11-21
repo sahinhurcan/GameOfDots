@@ -1,9 +1,9 @@
-angular.module('game.services', [])
-    .factory('firebase', function ($q) {
+angular.module('game.services', ['game.utils'])
+    .factory('firebase', function ($q, SecurityUtils) {
         var database = firebase.database();
         var factory = {};
 
-        factory.checkNetwrork = function () {
+        factory.checkNetwork = function () {
             var q = $q.defer();
             database.ref(".info/connected").on("value", function (snapshot) {
                 q.resolve(snapshot.val())
@@ -13,7 +13,27 @@ angular.module('game.services', [])
 
         factory.checkName = function (data) {
             var q = $q.defer();
-            database.ref('users/us-' + data.name).child('device').once('value').then(function (snapshot) {
+            // Security: Validate and sanitize username before database query
+            if (!data || !data.name || typeof data.name !== 'string') {
+                q.reject('Invalid username');
+                return q.promise;
+            }
+            
+            // Validate device
+            if (!data.device || typeof data.device !== 'string') {
+                q.reject('Invalid device');
+                return q.promise;
+            }
+            
+            // Use shared utility for consistent sanitization
+            var sanitizedName = SecurityUtils.sanitizeUsername(data.name);
+            
+            if (sanitizedName.length === 0) {
+                q.reject('Invalid username');
+                return q.promise;
+            }
+            
+            database.ref('users/us-' + sanitizedName).child('device').once('value').then(function (snapshot) {
                 var resp = snapshot.val();
                 if (resp === null) {
                     q.resolve(true)
@@ -24,33 +44,101 @@ angular.module('game.services', [])
                         q.resolve(false)
                     }
                 }
+            }).catch(function(error) {
+                console.error('Error checking username:', error);
+                q.reject(error);
             });
             return q.promise
         };
 
         factory.checkScore = function (data) {
             var q = $q.defer();
-            database.ref('users/us-' + data.name).child('score').once('value').then(function (snapshot) {
+            // Security: Validate input parameters
+            if (!data || !data.name || typeof data.name !== 'string' || typeof data.score !== 'number') {
+                q.reject('Invalid data');
+                return q.promise;
+            }
+            
+            // Use shared utility for consistent sanitization
+            var sanitizedName = SecurityUtils.sanitizeUsername(data.name);
+            
+            if (sanitizedName.length === 0) {
+                q.reject('Invalid username');
+                return q.promise;
+            }
+            
+            database.ref('users/us-' + sanitizedName).child('score').once('value').then(function (snapshot) {
                 var resp = snapshot.val();
-                if (resp < data.score) {
+                if (resp === null || resp < data.score) {
                     q.resolve(true)
                 } else {
                     q.resolve(resp)
                 }
+            }).catch(function(error) {
+                console.error('Error checking score:', error);
+                q.reject(error);
             });
             return q.promise
         };
 
         factory.setScore = function (data) {
-            database.ref('users/us-' + data.name).set(data);
+            // Security: Validate input before writing to database
+            if (!data || !data.name || typeof data.name !== 'string' || typeof data.score !== 'number') {
+                console.error('Invalid data for setScore');
+                return;
+            }
+            
+            // Validate date and device fields
+            if (typeof data.date !== 'string' || typeof data.device !== 'string') {
+                console.error('Invalid date or device for setScore');
+                return;
+            }
+            
+            // Use shared utility for consistent sanitization
+            var sanitizedName = SecurityUtils.sanitizeUsername(data.name);
+            
+            if (sanitizedName.length === 0) {
+                console.error('Invalid username for setScore');
+                return;
+            }
+            
+            // Create sanitized data object (keep original score value to preserve precision)
+            var sanitizedData = {
+                name: sanitizedName,
+                score: data.score,
+                date: data.date,
+                device: data.device
+            };
+            
+            database.ref('users/us-' + sanitizedName).set(sanitizedData).catch(function(error) {
+                console.error('Error setting score:', error);
+            });
         };
 
         factory.getScore = function () {
             var data = [];
-            database.ref("users").orderByChild("score").on("child_added", function (snapshot) {
-                data.push(snapshot.val());
+            var ref = database.ref("users").orderByChild("score").limitToLast(100);
+            
+            // Store the callback so we can remove the listener later
+            var childAddedCallback = function (snapshot) {
+                // Security: Validate data from database before adding to array
+                var userData = snapshot.val();
+                if (userData && typeof userData.score === 'number' && typeof userData.name === 'string') {
+                    data.push(userData);
+                }
+            };
+            
+            ref.on("child_added", childAddedCallback, function(error) {
+                console.error('Error getting scores:', error);
             });
-            return data;
+            
+            // Return both the data array and an unsubscribe function
+            return {
+                data: data,
+                unsubscribe: function() {
+                    ref.off("child_added", childAddedCallback);
+                }
+            };
         };
 
         return factory;

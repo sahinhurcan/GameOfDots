@@ -1,5 +1,5 @@
-angular.module('game.controllers', [])
-    .controller('game', function ($scope, $rootScope, $ionicPlatform, $timeout, $ionicModal, $ionicPopup, AdMob, firebase) {
+angular.module('game.controllers', ['game.utils'])
+    .controller('game', function ($scope, $rootScope, $ionicPlatform, $timeout, $ionicModal, $ionicPopup, AdMob, firebase, SecurityUtils) {
         var dot = $scope,
             fn = {};
 
@@ -34,6 +34,7 @@ angular.module('game.controllers', [])
             username: window.localStorage.getItem('username') || null
         };
         dot.users = [];
+        dot.scoreSubscription = null;
 
         //  MODAL
         dot.scoreModal = {
@@ -61,6 +62,10 @@ angular.module('game.controllers', [])
             }
         };
         dot.$on('$destroy', function () {
+            // Cleanup score subscription
+            if (dot.scoreSubscription && dot.scoreSubscription.unsubscribe) {
+                dot.scoreSubscription.unsubscribe();
+            }
             dot.addScoreModal && dot.addScoreModal.remove();
         });
         dot.$on('modal.hidden', function () {
@@ -181,7 +186,13 @@ angular.module('game.controllers', [])
 
         fn.getScore = function () {
             if ($rootScope.network) {
-                dot.users = firebase.getScore();
+                // Unsubscribe from previous listener if it exists
+                if (dot.scoreSubscription && dot.scoreSubscription.unsubscribe) {
+                    dot.scoreSubscription.unsubscribe();
+                }
+                // Get new score subscription
+                dot.scoreSubscription = firebase.getScore();
+                dot.users = dot.scoreSubscription.data;
             } else {
                 dot.sound.tap.play();
                 dot.opt.pause = true;
@@ -252,10 +263,17 @@ angular.module('game.controllers', [])
                             text: 'Kaydet',
                             type: 'button-positive',
                             onTap: function (e) {
-                                if (!dot.user.username) {
+                                // Security: Validate username before proceeding
+                                if (!dot.user.username || dot.user.username.trim().length === 0) {
                                     e.preventDefault();
                                 } else {
-                                    return dot.user.username;
+                                    // Use shared utility for consistent sanitization
+                                    var sanitized = SecurityUtils.sanitizeUsername(dot.user.username);
+                                    if (sanitized.length === 0) {
+                                        e.preventDefault();
+                                    } else {
+                                        return sanitized;
+                                    }
                                 }
                             }
                         }
