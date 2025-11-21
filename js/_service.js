@@ -105,7 +105,9 @@ angular.module('game.services', ['game.utils'])
 
         factory.getScore = function () {
             var data = [];
-            // Use on() with limitToLast for real-time updates, limited to top 100 scores
+            // Use on() with limitToLast for real-time leaderboard updates
+            // limitToLast(100) ensures initial load is limited to top 100 scores
+            // New scores added after will also trigger child_added (this is expected for real-time leaderboard)
             database.ref("users").orderByChild("score").limitToLast(100).on("child_added", function (snapshot) {
                 // Security: Validate data from database before adding to array
                 var userData = snapshot.val();

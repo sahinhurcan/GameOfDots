@@ -16,7 +16,7 @@ angular.module('game.utils', [])
                 // Remove spaces, allow only alphanumeric and Turkish characters
                 // Limit to 20 characters to prevent buffer overflow or display issues
                 var sanitized = username.replace(/ /g, '_')
-                    .replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '')
+                    .replace(/[^a-zA-Z0-9çÇöÖşŞıİğĞüÜ_]/g, '')
                     .substring(0, 20)
                     .toLowerCase();
                 
