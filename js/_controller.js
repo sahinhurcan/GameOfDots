@@ -1,5 +1,5 @@
 angular.module('game.controllers', [])
-    .controller('game', function ($scope, $rootScope, $ionicPlatform, $timeout, $ionicModal, $ionicPopup, AdMob, firebase) {
+    .controller('game', function ($scope, $rootScope, $ionicPlatform, $timeout, $ionicModal, $ionicPopup, AdMob, firebase, SecurityUtils) {
         var dot = $scope,
             fn = {};
 
@@ -256,8 +256,8 @@ angular.module('game.controllers', [])
                                 if (!dot.user.username || dot.user.username.trim().length === 0) {
                                     e.preventDefault();
                                 } else {
-                                    // Additional validation: check username length and format
-                                    var sanitized = dot.user.username.replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '').substring(0, 20).toLowerCase();
+                                    // Use shared utility for consistent sanitization
+                                    var sanitized = SecurityUtils.sanitizeUsername(dot.user.username);
                                     if (sanitized.length === 0) {
                                         e.preventDefault();
                                     } else {

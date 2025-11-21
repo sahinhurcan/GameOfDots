@@ -1,4 +1,4 @@
-angular.module('starter', ['ionic', 'game.services', 'game.controllers', 'game.directives'])
+angular.module('starter', ['ionic', 'game.services', 'game.controllers', 'game.directives', 'game.utils'])
     .run(function ($ionicPlatform, $rootScope, AdMob) {
         $rootScope.network = false;
         $ionicPlatform.ready(function () {

@@ -1,5 +1,5 @@
 angular.module('game.services', [])
-    .factory('firebase', function ($q) {
+    .factory('firebase', function ($q, SecurityUtils) {
         var database = firebase.database();
         var factory = {};
 
@@ -19,8 +19,8 @@ angular.module('game.services', [])
                 return q.promise;
             }
             
-            // Sanitize username to prevent injection attacks
-            var sanitizedName = data.name.replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '').substring(0, 20).toLowerCase();
+            // Use shared utility for consistent sanitization
+            var sanitizedName = SecurityUtils.sanitizeUsername(data.name);
             
             if (sanitizedName.length === 0) {
                 q.reject('Invalid username');
@@ -53,8 +53,8 @@ angular.module('game.services', [])
                 return q.promise;
             }
             
-            // Sanitize username
-            var sanitizedName = data.name.replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '').substring(0, 20).toLowerCase();
+            // Use shared utility for consistent sanitization
+            var sanitizedName = SecurityUtils.sanitizeUsername(data.name);
             
             if (sanitizedName.length === 0) {
                 q.reject('Invalid username');
@@ -82,18 +82,18 @@ angular.module('game.services', [])
                 return;
             }
             
-            // Sanitize username
-            var sanitizedName = data.name.replace(/[^a-zA-Z0-9sçÇöÖşŞıİğĞüÜ_]/g, '').substring(0, 20).toLowerCase();
+            // Use shared utility for consistent sanitization
+            var sanitizedName = SecurityUtils.sanitizeUsername(data.name);
             
             if (sanitizedName.length === 0) {
                 console.error('Invalid username for setScore');
                 return;
             }
             
-            // Create sanitized data object
+            // Create sanitized data object (keep original score value to preserve precision)
             var sanitizedData = {
                 name: sanitizedName,
-                score: parseInt(data.score),
+                score: data.score,
                 date: data.date,
                 device: data.device
             };
@@ -105,12 +105,17 @@ angular.module('game.services', [])
 
         factory.getScore = function () {
             var data = [];
-            database.ref("users").orderByChild("score").limitToLast(100).on("child_added", function (snapshot) {
-                // Security: Validate data from database before adding to array
-                var userData = snapshot.val();
-                if (userData && typeof userData.score === 'number' && typeof userData.name === 'string') {
-                    data.push(userData);
-                }
+            // Use once() instead of on() for better performance and to get top 100 scores
+            database.ref("users").orderByChild("score").limitToLast(100).once("value").then(function (snapshot) {
+                snapshot.forEach(function(childSnapshot) {
+                    // Security: Validate data from database before adding to array
+                    var userData = childSnapshot.val();
+                    if (userData && typeof userData.score === 'number' && typeof userData.name === 'string') {
+                        data.push(userData);
+                    }
+                });
+            }).catch(function(error) {
+                console.error('Error getting scores:', error);
             });
             return data;
         };
