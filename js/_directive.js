@@ -9,7 +9,7 @@ angular.module('game.directives', ['game.utils'])
                         ngModel.$setViewValue(sanitized);
                         ngModel.$render();
                         // Explicitly handle empty string case
-                        return sanitized === '' ? '' : sanitized;
+                        return sanitized;
                     } else {
                         // Explicitly return empty string for falsy input
                         return '';
