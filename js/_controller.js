@@ -1,4 +1,4 @@
-angular.module('game.controllers', [])
+angular.module('game.controllers', ['game.utils'])
     .controller('game', function ($scope, $rootScope, $ionicPlatform, $timeout, $ionicModal, $ionicPopup, AdMob, firebase, SecurityUtils) {
         var dot = $scope,
             fn = {};

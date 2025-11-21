@@ -1,4 +1,4 @@
-angular.module('game.directives', [])
+angular.module('game.directives', ['game.utils'])
     .directive('userName', function (SecurityUtils) {
         return {
             require: 'ngModel',

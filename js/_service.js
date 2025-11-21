@@ -1,9 +1,9 @@
-angular.module('game.services', [])
+angular.module('game.services', ['game.utils'])
     .factory('firebase', function ($q, SecurityUtils) {
         var database = firebase.database();
         var factory = {};
 
-        factory.checkNetwrork = function () {
+        factory.checkNetwork = function () {
             var q = $q.defer();
             database.ref(".info/connected").on("value", function (snapshot) {
                 q.resolve(snapshot.val())
@@ -105,16 +105,14 @@ angular.module('game.services', [])
 
         factory.getScore = function () {
             var data = [];
-            // Use once() instead of on() for better performance and to get top 100 scores
-            database.ref("users").orderByChild("score").limitToLast(100).once("value").then(function (snapshot) {
-                snapshot.forEach(function(childSnapshot) {
-                    // Security: Validate data from database before adding to array
-                    var userData = childSnapshot.val();
-                    if (userData && typeof userData.score === 'number' && typeof userData.name === 'string') {
-                        data.push(userData);
-                    }
-                });
-            }).catch(function(error) {
+            // Use on() with limitToLast for real-time updates, limited to top 100 scores
+            database.ref("users").orderByChild("score").limitToLast(100).on("child_added", function (snapshot) {
+                // Security: Validate data from database before adding to array
+                var userData = snapshot.val();
+                if (userData && typeof userData.score === 'number' && typeof userData.name === 'string') {
+                    data.push(userData);
+                }
+            }, function(error) {
                 console.error('Error getting scores:', error);
             });
             return data;
